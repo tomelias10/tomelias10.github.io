@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ORYNVAL — Inference infrastructure research</title>
+<meta name="description" content="ORYNVAL is an early-stage research company working on reducing GPU inference cost for long-context serving. Pilot early access and research updates.">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data:; connect-src https://docs.google.com; form-action https://docs.google.com; base-uri 'none'">
+<style>
+:root{--bg:#0b0d10;--panel:#12161b;--line:#222a33;--txt:#d7dde4;--mut:#8a96a3;--acc:#7cc4ff;--err:#ff8a8a;--ok:#8ee6a8}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:880px;margin:0 auto;padding:48px 20px 64px}
+header .brand{font:600 14px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.18em;color:var(--mut)}
+h1{font-size:clamp(26px,4.5vw,38px);line-height:1.2;margin:18px 0 14px;font-weight:650}
+h2{font-size:20px;margin:0 0 6px}
+p{margin:0 0 14px}
+.lede{color:var(--mut);max-width:680px}
+.status{display:inline-block;margin-top:6px;padding:6px 10px;border:1px solid var(--line);border-radius:6px;font:13px ui-monospace,Menlo,monospace;color:var(--mut)}
+section{margin-top:44px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:760px){.grid{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:22px}
+.card .sub{color:var(--mut);font-size:14px;margin-bottom:16px}
+label{display:block;font-size:13px;color:var(--mut);margin:12px 0 4px}
+input,select{width:100%;padding:10px 11px;background:#0d1115;color:var(--txt);border:1px solid var(--line);border-radius:6px;font:inherit;font-size:15px}
+input:focus,select:focus{outline:2px solid var(--acc);outline-offset:0;border-color:transparent}
+.check{display:flex;gap:10px;align-items:flex-start;margin-top:16px;font-size:14px;color:var(--txt)}
+.check input{width:auto;margin-top:4px}
+.opt{color:#5f6b77}
+button{margin-top:18px;width:100%;padding:12px;background:var(--acc);color:#061018;border:0;border-radius:6px;font:600 15px inherit;cursor:pointer}
+button[disabled]{opacity:.6;cursor:default}
+.msg{margin-top:12px;font-size:14px;min-height:1.2em}
+.msg.ok{color:var(--ok)}.msg.err{color:var(--err)}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+ul{padding-left:20px;margin:0 0 14px}
+li{margin-bottom:6px}
+a{color:var(--acc)}
+footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:var(--mut);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="brand">ORYNVAL</div>
+  <h1>Research on the memory cost of long-context inference.</h1>
+  <p class="lede">At long context, decode is bound by how many bytes of KV cache each step reads from HBM, and by how much of that cache fits on a GPU. That is what sets GPU count. ORYNVAL is an early-stage research company working on reductions in GPU inference cost that we can defend mathematically, targeting KV-cache memory and bandwidth in long-context serving.</p>
+  <span class="status">Status: research stage. No validated results yet.</span>
+</header>
+
+<section>
+  <h2>What we are working on</h2>
+  <ul>
+    <li>KV-cache memory footprint and HBM bandwidth per decode step at long context.</li>
+    <li>Compression and selection schemes for the KV cache, evaluated against published baselines under equal memory budgets.</li>
+    <li>Measurement that holds up in real serving engines (vLLM, SGLang, TensorRT-LLM), not only in isolated kernels.</li>
+  </ul>
+  <p class="lede">We publish what fails as well as what works. We will not quote performance numbers until they reproduce.</p>
+</section>
+
+<section>
+  <div class="grid">
+    <form class="card" id="form-pilot" data-tier="pilot" novalidate>
+      <h2>Pilot early access</h2>
+      <div class="sub">For teams running substantial inference workloads. We will contact a small number of teams when there is something worth evaluating on real traffic. Signing up does not commit you to anything.</div>
+
+      <label for="p-name">Name</label>
+      <input id="p-name" name="name" autocomplete="name" required>
+
+      <label for="p-email">Work email</label>
+      <input id="p-email" name="email" type="email" autocomplete="email" required>
+
+      <label for="p-company">Company</label>
+      <input id="p-company" name="company" autocomplete="organization" required>
+
+      <label for="p-role">Role</label>
+      <input id="p-role" name="role" autocomplete="organization-title" placeholder="e.g. Inference engineer, ML platform lead" required>
+
+      <label for="p-stack">Serving stack</label>
+      <select id="p-stack" name="stack" required>
+        <option value="">Select</option>
+        <option>vLLM</option><option>SGLang</option><option>TensorRT-LLM</option><option>Other</option>
+      </select>
+
+      <label for="p-gpu">GPU type and approximate count</label>
+      <input id="p-gpu" name="gpu" placeholder="e.g. H100 × 64" required>
+
+      <label for="p-ctx">Typical context length</label>
+      <select id="p-ctx" name="context" required>
+        <option value="">Select</option>
+        <option>Under 8K</option><option>8K–32K</option><option>32K–128K</option><option>128K–1M</option><option>Over 1M</option>
+      </select>
+
+      <label for="p-bottleneck">Main bottleneck</label>
+      <select id="p-bottleneck" name="bottleneck" required>
+        <option value="">Select</option>
+        <option>KV-cache OOM / preemption</option>
+        <option>Throughput at long context</option>
+        <option>Cost / GPU overprovisioning</option>
+        <option>Latency (TTFT / TPOT)</option>
+      </select>
+
+      <label for="p-spend">Monthly inference spend <span class="opt">(optional)</span></label>
+      <select id="p-spend" name="spend">
+        <option value="">Select</option>
+        <option>Prefer not to say</option>
+        <option>Under $10k</option><option>$10k–$50k</option><option>$50k–$250k</option><option>$250k–$1M</option><option>Over $1M</option>
+      </select>
+
+      <div class="hp" aria-hidden="true"><label>Leave empty<input name="website" tabindex="-1" autocomplete="off"></label></div>
+
+      <label class="check"><input type="checkbox" name="consent" value="ORYNVAL may contact me about a pilot." required><span>ORYNVAL may contact me about a pilot.</span></label>
+
+      <button type="submit">Request pilot access</button>
+      <div class="msg" role="status" aria-live="polite"></div>
+    </form>
+
+    <form class="card" id="form-updates" data-tier="updates" novalidate>
+      <h2>Research updates</h2>
+      <div class="sub">An occasional technical note when we have something new: an analysis, a measurement, or a negative result. No marketing.</div>
+
+      <label for="u-email">Email</label>
+      <input id="u-email" name="email" type="email" autocomplete="email" required>
+
+      <label for="u-role">Role <span class="opt">(optional)</span></label>
+      <input id="u-role" name="role" autocomplete="organization-title">
+
+      <div class="hp" aria-hidden="true"><label>Leave empty<input name="website" tabindex="-1" autocomplete="off"></label></div>
+
+      <label class="check"><input type="checkbox" name="consent" value="Send me occasional technical updates from ORYNVAL." required><span>Send me occasional technical updates from ORYNVAL.</span></label>
+
+      <button type="submit">Subscribe</button>
+      <div class="msg" role="status" aria-live="polite"></div>
+    </form>
+  </div>
+</section>
+
+<section>
+  <h2>What we publish</h2>
+  <p>Short technical analysis of published inference research: what a result does and does not show, the formula behind it, and where it breaks. Example: <a href="https://x.com/ThomasE332/status/2115183328722841750" rel="noopener noreferrer" target="_blank">why cross-layer KV sharing buys capacity, not decode speed</a>.</p>
+</section>
+
+<footer>
+  <p>Privacy: we use what you submit only to contact you about ORYNVAL. We do not sell or share it. To have your data deleted, email <a href="mailto:tomelias2020@gmail.com?subject=Delete%20my%20data">tomelias2020@gmail.com</a>. This page uses no analytics or tracking scripts.</p>
+  <p>© <span id="yr"></span> ORYNVAL</p>
+</footer>
+</div>
+
+<script>
+/* ===================== CONFIG — the only thing to edit =====================
+ * One endpoint per tier. type: "google" | "formspree" | "none".
+ *  - google:    endpoint = https://docs.google.com/forms/d/e/<FORM_ID>/formResponse
+ *               fields   = map of page field -> "entry.<number>" (from the form's prefilled link)
+ *  - formspree: endpoint = https://formspree.io/f/<id>  (fields ignored; names sent as-is)
+ *  - none:      nothing is sent; the page says signups are not open yet.
+ * If you switch provider, also add its origin to the CSP meta tag in <head>.
+ * ========================================================================== */
+const FORM_ENDPOINT = {
+  pilot: {
+    type: "google",
+    endpoint: "https://docs.google.com/forms/d/e/1FAIpQLSfg0TL9M1j85u2iCa2MXMw4b2gD_Yy8_tPyrMWgzVbAzbsICw/formResponse",
+    fields: {
+      name: "entry.1462385489", email: "entry.130811983", company: "entry.567820334", role: "entry.78566336",
+      stack: "entry.339481516", gpu: "entry.16205090", context: "entry.1771236850",
+      bottleneck: "entry.1868671969", spend: "entry.748486107", consent: "entry.1869373757"
+    }
+  },
+  updates: {
+    type: "google",
+    endpoint: "https://docs.google.com/forms/d/e/1FAIpQLSdS17euRFBVZay0ZhmuDdW9mM-IJFxt-EZcohNc6TV8Cd8BIQ/formResponse",
+    fields: { email: "entry.1199612967", role: "entry.413594683", consent: "entry.801174855" }
+  }
+};
+
+document.getElementById("yr").textContent = new Date().getFullYear();
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+async function submitTier(cfg, data) {
+  if (cfg.type === "google") {
+    const body = new URLSearchParams();
+    for (const [k, v] of Object.entries(data)) if (cfg.fields[k] && v) body.append(cfg.fields[k], v);
+    // Google Forms sends no CORS headers: the response is opaque, so success can't be read back.
+    await fetch(cfg.endpoint, { method: "POST", mode: "no-cors", body });
+    return true;
+  }
+  if (cfg.type === "formspree") {
+    const r = await fetch(cfg.endpoint, {
+      method: "POST", headers: { "Accept": "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+    return r.ok;
+  }
+  return null; // "none"
+}
+
+document.querySelectorAll("form[data-tier]").forEach(form => {
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const msg = form.querySelector(".msg"), btn = form.querySelector("button");
+    msg.className = "msg"; msg.textContent = "";
+    const fd = new FormData(form);
+    if (fd.get("website")) return; // honeypot: silently drop bots
+    for (const el of form.querySelectorAll("[required]")) {
+      const bad = el.type === "checkbox" ? !el.checked : !el.value.trim();
+      if (bad) { msg.className = "msg err"; msg.textContent = "Please complete all required fields."; el.focus(); return; }
+    }
+    if (!EMAIL_RE.test(fd.get("email"))) { msg.className = "msg err"; msg.textContent = "Please enter a valid email."; return; }
+    const data = {};
+    for (const [k, v] of fd.entries()) if (k !== "website") data[k] = String(v).trim();
+    data.tier = form.dataset.tier;
+    data.submitted_at = new Date().toISOString();
+    btn.disabled = true;
+    try {
+      const ok = await submitTier(FORM_ENDPOINT[form.dataset.tier], data);
+      if (ok === null) { msg.className = "msg err"; msg.textContent = "Signups are not open yet. Nothing was sent."; }
+      else if (ok) { msg.className = "msg ok"; msg.textContent = "Thanks — you\u2019re on the list."; form.reset(); }
+      else { msg.className = "msg err"; msg.textContent = "Something went wrong. Please try again later."; }
+    } catch (_) {
+      msg.className = "msg err"; msg.textContent = "Network error. Please try again later.";
+    } finally { btn.disabled = false; }
+  });
+});
+</script>
+</body>
+</html>
